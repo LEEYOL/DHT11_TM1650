@@ -1,8 +1,8 @@
+//0-9, decimal point, Showing °C on Tmp display as C
 // Include necessary libraries
-// C not displayed
 #include "DHT.h"
 #include <Wire.h>
-#include <TM1650_char.h> // TM1650 display library
+#include <TM1650_char.h> // TM1650 display library, If not working, enter full file path
 
 // Define pins
 #define DHTPIN 4     // Digital pin connected to the DHT sensor
@@ -80,7 +80,7 @@ void displayTemperature(float temperature) {
   display.displayBit(2, digit3); // Display first decimal digit
 
   // Display the character 'C' on the fourth digit
-  display.displayBit(3, 'C'); // Custom segment pattern for 'C'
+  display.displayChar(3, 'C'); // Custom segment pattern for 'C'
 }
 
 void displayHumidity(float humidity) {
@@ -102,6 +102,6 @@ void displayHumidity(float humidity) {
   display.displayDot(1, true);   // Turn on decimal point after second digit
   display.displayBit(2, digit3); // Display first decimal digit
 
-  // Display the character '%' on the fourth digit
-  display.displayBit(3, 0x6A); // Custom segment pattern for '%'
+  // Clear character on the fourth digit, as % cannot be displayed
+  display.clearBit(3); 
 }
