@@ -1,0 +1,123 @@
+// Include necessary libraries
+#include "DHT.h"
+#include <Wire.h>
+#include <TM1650_char.cpp> // TM1650 display library
+
+// Define pins
+#define DHTPIN 4     // Digital pin connected to the DHT sensor
+#define CLK 16       // TM1650 clock pin
+#define DIO 17       // TM1650 data pin
+
+// Initialize the TM1650 display
+TM1650 display(CLK, DIO);
+
+// Define sensor type
+#define DHTTYPE DHT11   // DHT 11
+
+// Initialize DHT sensor
+DHT dht(DHTPIN, DHTTYPE);
+
+// Function prototypes
+void clearDisplay();
+void displayTemperature(float temperature);
+byte digitToSegment(int digit);
+
+void setup() {
+  Serial.begin(9600);
+  Serial.println(F("DHTxx test!"));
+  Serial.println("TM1650 Example Code");
+
+  dht.begin();
+
+  // Initialize the TM1650 display
+  Wire.begin(CLK, DIO); // Initialize I2C communication
+  display.setBrightness(7); // Set display brightness (0-7)
+
+  // Clear display manually
+  clearDisplay();
+}
+
+void loop() {
+  // Wait a few seconds between measurements.
+  delay(2000);
+
+  // Reading temperature or humidity takes about 250 milliseconds!
+  // Sensor readings may also be up to 2 seconds 'old' (it's a very slow sensor)
+  float h = dht.readHumidity();
+  // Read temperature as Celsius (the default)
+  float t = dht.readTemperature();
+
+  // Check if any reads failed and exit early (to try again).
+  if (isnan(h) || isnan(t)) {
+    Serial.println(F("Failed to read from DHT sensor!"));
+    return;
+  }
+
+  // Debug: Print the temperature to Serial
+  Serial.print("Temperature (Celsius): ");
+  Serial.println(t);
+
+  // Display temperature on the TM1650
+  displayTemperature(t);
+
+  // Print data to Serial Monitor for debugging
+  Serial.print(F("Humidity: "));
+  Serial.print(h);
+  Serial.print(F("%  Temperature: "));
+  Serial.print(t);
+  Serial.println(F("°C"));
+}
+
+// Function to display a float temperature value on the TM1650
+void displayTemperature(float temperature) {
+  int tempInt = static_cast<int>(temperature * 10); // Convert float to int (e.g., 23.4 -> 234)
+  
+  // Extract individual digits
+  int digit1 = (tempInt / 1000) % 10; // Thousands place
+  int digit2 = (tempInt / 100) % 10;  // Hundreds place
+  int digit3 = (tempInt / 10) % 10;   // Tens place
+  int digit4 = tempInt % 10;          // Ones place
+
+  // Debug: Print the individual digits
+  Serial.print("Displaying digits: ");
+  Serial.print(digit1); Serial.print(" ");
+  Serial.print(digit2); Serial.print(" ");
+  Serial.print(digit3); Serial.print(" ");
+  Serial.print(digit4); Serial.println();
+
+  // Display each digit on the TM1650 using displayBit
+  display.displayBit(0, digitToSegment(digit1));
+  display.displayBit(1, digitToSegment(digit2));
+  display.displayBit(2, digitToSegment(digit3) | 0x80); // Add dot for decimal point
+  display.displayBit(3, digitToSegment(digit4));
+}
+
+// Function to clear the display manually
+void clearDisplay() {
+  for (int i = 0; i < 4; i++) {
+    display.displayBit(i, 0x00); // Set each digit to blank
+  }
+}
+
+// Function to convert a digit (0-9) to a 7-segment representation
+byte digitToSegment(int digit) {
+  // TM1650 7-segment bit patterns for digits 0-9
+  static const byte segmentMap[] = {
+    0b00111111, // 0
+    0b00000110, // 1
+    0b01011011, // 2
+    0b01001111, // 3
+    0b01100110, // 4
+    0b01101101, // 5
+    0b01111101, // 6
+    0b00000111, // 7
+    0b01111111, // 8
+    0b01101111  // 9
+  };
+
+  if (digit >= 0 && digit <= 9) {
+    return segmentMap[digit];
+  } else {
+    return 0x00; // Return blank if digit is out of range
+  }
+}
